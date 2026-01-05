@@ -33,14 +33,10 @@ interface eth0
 static ip_address=192.168.0.X/24
 static routers=192.168.0.1
 static domain_name_servers=127.0.0.1
-#Remove below if you are not using ipv6
-ipv6only
-ia_na 1
-ia_pd 1
 ```
 Reboot:
 ```bash
-sudo systemctl restart dhcpd
+sudo systemctl restart dhcpcd
 sudo reboot
 ```
 Confirm:
@@ -56,7 +52,7 @@ curl -sSL https://install.pi-hole.net | bash
 ```
 **Important choices during install:**
 
-- **Upstream DNS:** Any (this is only temporary; later change to custom DNS: `127.0.0.1#5353` as DNSCrypt will use this)
+- **Upstream DNS:** Any (this is only temporary; later change to custom DNS: `127.0.0.1#5053` as DNSCrypt will use this)
 - **Web interface:** Yes
 - **Blocklists:** Default is fine
 
@@ -70,8 +66,7 @@ In Pi-hole UI:
 Settings -> DHCP
 Enable:
 - DHCP Server
-- Enable Ipv6 Support (SLAAC + RA)]
-- Enable RA Server - managed + assisted
+- Enable Ipv6 Support (SLAAC + RA)] - Diable DHCP6 if you want to use ipv6 completely i nthe network
 - "Pihole as the only DHCP server"
 Save
 
@@ -146,8 +141,7 @@ require_dnssec = true
 Uncheck all Upstream DNS Servers
 Run the following command to set the upstream DNS server of Pi-hole to your local dnscrypt-proxy instance:
 ```bash
-sudo pihole-FTL --config dns.upstreams '["127.0.0.1#5053"]'
-sudo pihole-FTL --config dns.upstreams '[::1]:5053'
+sudo pihole-FTL --config dns.upstreams '["127.0.0.1#5053","[::1]#5053"]'
 ```
 #Restarting Services
 Run the following commands to restart dnscrypt-proxy and FTLDNS:
@@ -176,7 +170,7 @@ Optionally, confirm in the Pi-hole admin web interface that upstream DNS servers
 - **Under "Upstream DNS Servers", ensure the box is filled with the IP address and port combination dnscrypt-proxy listens on, such as 127.0.0.1#5053.**
 - **Click on Save at the bottom.**
 
-- **Upstream DNS:** Any (this is only temporary; later change to custom DNS: `127.0.0.1#5353` as DNSCrypt will use this)
+- **Upstream DNS:** Any (this is only temporary; later change to custom DNS: `127.0.0.1#5053` as DNSCrypt will use this)
 - **Web interface:** Yes
 - **Blocklists:** Default is fine
 
@@ -188,7 +182,7 @@ sudo nano /etc/pihole/setupVars.conf
 Set:
 ```bash
 PIHOLE_DNS_1=127.0.0.1#5053
-PIHOLE_DNS_1=::1#5053
+PIHOLE_DNS_2=::1#5053
 ```
 Restart:
 ```bash
@@ -213,21 +207,23 @@ sudo systemctl enable dnscrypt-proxy.socket
 sudo systemctl enable dnscrypt-proxy.service
 sudo systemctl enable pi-hole-FTL
 
-sudo systemctl start dnscrypt-proxy
-sudo systemctl start dnscrypt-proxy.socket
-sudo systemctl start dnscrypt-proxy.service
+sudo systemctl disable dnscrypt-proxy.service
+sudo systemctl enable dnscrypt-proxy.socket
+
 sudo systemctl start pi-hole-FTL
 ```
+Advice - You do not need:
+systemctl start dnscrypt-proxy
+systemctl enable dnscrypt-proxy
+> **The socket handles it.**
+
 Test with:
 ```bash
 dig @127.0.0.1 google.com +dnssec
 ```
 ## Step X: DDNS from FreeDNS
-```bash
-sudo nano /etc/hosts
-```
-Enter your subdomain name next to the localhost
-127.0.0.1 mypihome.ddns.net
+Ensure not to use it here to your loopback - common mistake
+/etc/hosts
 
 # Create updater
 
@@ -278,6 +274,7 @@ sudo ufw default deny incoming
 sudo ufw default allow outgoing
 sudo ufw allow ssh
 sudo ufw allow 53
+
 sudo ufw allow 51820/udp
 sudo ufw allow 80/tcp
 sudo ufw enable
@@ -287,6 +284,7 @@ sudo ufw enable
 sudo systemctl enable ufw
 sudo systemctl start ufw
 sudo systemctl status ufw
+sudo ufw status verbose
 ```
 
 # Final Boot Validation
@@ -299,7 +297,9 @@ pihole status
 systemctl status dnscrypt-proxy
 sudo wg show
 ufw status
-dig @127.0.0.1 google.com +dnssec # should retuirn NOERROR and 'ad' flag
+dig @127.0.0.1 google.com +dnssec
+# should return NOERROR and 'ad' flag
+journalctl -u dnscrypt-proxy | tail
 ```
 
 
@@ -312,6 +312,5 @@ systemctl status dnscrypt-proxy
 ```
 
 ## Next Steps
-- Configure Pi-hole upstream DNS to point to `127.0.0.1#53` if using DNSCrypt as local resolver.
 - Open/forward the chosen VPN port on your router (default WireGuard: 51820/UDP).
 - Add your client profiles and test connectivity.
