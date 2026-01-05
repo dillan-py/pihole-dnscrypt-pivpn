@@ -39,10 +39,6 @@ interface eth0
 static ip_address=192.168.0.X/24
 static routers=192.168.0.1
 static domain_name_servers=127.0.0.1
-
-#I am using dhcp6 so ignore if you are not using this:
-ia_na 1
-ia_pd 1
 ```
 Reboot:
 ```bash
@@ -85,7 +81,7 @@ Enable:
 - 
   **IMPORTANT** (do not skip)
 If Pi-hole provides IPv6:
-- Disable IPv6 DHCP and RA on your router
+- Disable IPv6 DHCP and RA on your router - SLAAC comes from RA, not DHCPv6 (DHCPv6 ≠ RA)
 - Never run two RA servers
 Failure to do this causes:
 - IPv6 instability
@@ -107,7 +103,7 @@ Chatgpt says not to do this step yet?:
 ```
 **Configuring dnscrypt-proxy**
 
-**Important: edit the file shown in the guide by creating an override to survice updates and reboots:**
+**Important: edit the file shown in the guide by creating an override to survive updates and reboots:**
 This makes /etc/systemd/system/dnscrypt-proxy.socket.d/override.conf
 ```bash
 sudo systemctl edit dnscrypt-proxy.socket
@@ -139,8 +135,9 @@ sudo systemctl restart dnscrypt-proxy.socket
 Verify it’s listening only on 5053 (both IPv4/IPv6)
 
 ```bash
-
+#With socket activation, this will often show inactive (dead), That is normal.
 systemctl status dnscrypt-proxy.socket
+journalctl -u dnscrypt-proxy
 sudo ss -lntu | grep 5053    # TCP
 sudo ss -lnpu | grep 5053    # UDP
 ```
@@ -191,7 +188,7 @@ Optionally, confirm in the Pi-hole admin web interface that upstream DNS servers
 - **Log into the Pi-hole admin web interface.**
 - **Navigate to "Settings" and from there to "DNS".**
 - **Under "Upstream DNS Servers", uncheck all boxes for public DNS servers.**
-- **Under "Upstream DNS Servers", ensure the box is filled with the IP address and port combination dnscrypt-proxy listens: 127.0.0.1#5053 and 1#5053.**
+- **Under "Upstream DNS Servers", ensure the box is filled with the IP address and port combination dnscrypt-proxy listens: 127.0.0.1#5053 and [::1]#5053.**
 - **Click on Save at the bottom.**
 
 # Link Pi-hole to dnscrypt-proxy
@@ -233,7 +230,7 @@ systemctl enable dnscrypt-proxy
 > **The socket handles it.**
 
 ## Step X: DDNS from FreeDNS
-Ensure not to use it here to your loopback - common mistake
+Do not point your DDNS hostname to 127.0.0.1 or ::1. This must point to your public IP.
 /etc/hosts
 
 # Create updater
@@ -285,18 +282,28 @@ sudo ufw default deny incoming
 sudo ufw default allow outgoing
 sudo ufw allow ssh
 sudo ufw allow 53
-
 sudo ufw allow 51820/udp
 sudo ufw allow 80/tcp
-sudo ufw enable
-```
 
-```bash
+# Enable UFW
+sudo ufw enable
+
+# Ensure UFW starts at boot (optional)
 sudo systemctl enable ufw
-sudo systemctl start ufw
 sudo systemctl status ufw
 sudo ufw status verbose
+
 ```
+Check for ipv6 filtering:
+```bash
+sudo nano /etc/default/ufw
+```
+For ipv6 filtering ensure:
+```bash
+IPV6=yes
+```
+
+
 
 # Final Boot Validation
 ```bash
@@ -305,7 +312,6 @@ sudo reboot
 Post-boot checks:
 ```bash
 pihole status
-systemctl status dnscrypt-proxy
 sudo wg show
 ufw status
 dig @127.0.0.1 google.com +dnssec
@@ -319,7 +325,7 @@ journalctl -u dnscrypt-proxy | tail
 ```bash
 pihole status          # Check Pi-hole status
 pivpn -d               # Run PiVPN debug
-systemctl status dnscrypt-proxy
+systemctl status dnscrypt-proxy # will sjow inactive but just incase you wanted to see the results this is the command
 ```
 
 ## Next Steps
