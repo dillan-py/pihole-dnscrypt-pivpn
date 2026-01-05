@@ -75,7 +75,7 @@ This makes /etc/systemd/system/dnscrypt-proxy.socket.d/override.conf
 ```bash
 sudo systemctl edit dnscrypt-proxy.socket
 ```
-Use port 5053 on localhost and make sure you clear any vendor defaults, this setup uses includes IPv6 to avoid dnsleaks through IPV6:
+By default, FTLDNS listens on the standard DNS port 53, to avoid conflicts with FTLDNS, use port 5053 on localhost ensuring dnscrypt-proxy listens on a port that is not in use by other services and make sure you clear any vendor defaults, this setup uses includes IPv6 to avoid dnsleaks through IPV6:
 ```bash
 [Socket]
 # Clear vendor defaults before setting your own
@@ -90,17 +90,78 @@ ListenDatagram=[::1]:5053
 ```
 > **Note:** Clear existing `ListenStream` and `ListenDatagram` entries before adding new ones to avoid multiple socket bindings.
 
+Apply it:
+```bash
 
+# Reload systemd and restart the socket
+sudo systemctl daemon-reload
+sudo systemctl restart dnscrypt-proxy.socket
 
-By default, FTLDNS listens on the standard DNS port 53.
+# If the service is running, restart it too
+sudo systemctl restart dnscrypt-proxy
+```
 
-To avoid conflicts with FTLDNS, edit /usr/lib/systemd/system/dnscrypt-proxy.socket, ensuring dnscrypt-proxy listens on a port that is not in use by other services.
+Verify it’s listening only on 5053 (both IPv4/IPv6)
 
-The following settings in /usr/lib/systemd/system/dnscrypt-proxy.socket, let dnscrypt-proxy listen on localhost on port 5053:
+```bash
 
+systemctl status dnscrypt-proxy.socket
+sudo ss -lntu | grep 5053    # TCP
+sudo ss -lnpu | grep 5053    # UDP
+```
+Also edit /etc/dnscrypt-proxy/dnscrypt-proxy.toml, updating the following settings:
+```bash
+sudo nano /etc/dnscrypt-proxy/dnscrypt-proxy.toml
+```
+Use the follwing settings:
+```bash
+# Use systemd socket activation:
+listen_addresses = []
 
+# Populate `server_names` with desired DoH/DNSCrypt upstream DNS servers listed in https://dnscrypt.info/public-servers/.
+# Example for Cloudflare malware-blocking DNS and bhrama-world DNS for redundancy
+server_names = ['cloudflare-security', 'bhrama-world']
+```
+#Configuring Pi-hole Upstream DNS Servers
+Run the following command to set the upstream DNS server of Pi-hole to your local dnscrypt-proxy instance:
+```bash
+sudo pihole-FTL --config dns.upstreams '["127.0.0.1#5053"]'
+sudo pihole-FTL --config dns.upstreams '[::1]:5053'
+```
+#Restarting Services
+Run the following commands to restart dnscrypt-proxy and FTLDNS:
+```bash
+sudo systemctl restart dnscrypt-proxy.socket
+sudo systemctl restart dnscrypt-proxy.service
+sudo systemctl restart pihole-FTL.service
+```
 
+#Reviewing Service Status
+Run the following commands to review the status of each restarted service:
+```bash
+sudo systemctl status dnscrypt-proxy.socket
+sudo systemctl status dnscrypt-proxy.service
+sudo systemctl status pihole-FTL.service
+```
 
+Configuring Pi-hole after DNSCrypt
+Optionally, confirm in the Pi-hole admin web interface that upstream DNS servers are configured correctly:
+
+- **Log into the Pi-hole admin web interface.**
+- **Navigate to "Settings" and from there to "DNS".**
+- **Under "Upstream DNS Servers", uncheck all boxes for public DNS servers.**
+- **Under "Upstream DNS Servers", ensure the box is filled with the IP address and port combination dnscrypt-proxy listens on, such as 127.0.0.1#5053.**
+- **Click on Save at the bottom.**
+
+- **Upstream DNS:** Any (this is only temporary; later change to custom DNS: `127.0.0.1#5353` as DNSCrypt will use this)
+- **Web interface:** Yes
+- **Blocklists:** Default is fine
+
+To update dnscrypt-proxy using this install via APT, is simply by updating your system as you usually would:
+```bash
+sudo apt update
+sudo apt upgrade
+```
 
 
 ## Install PiVPN (WireGuard/OpenVPN)
