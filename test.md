@@ -59,21 +59,21 @@ pihole status
 ```
 
 ## Step 4: Install and Configure DNSCrypt
-Follwing this working guide: https://docs.pi-hole.net/guides/dns/dnscrypt-proxy/
+Following this working guide: https://docs.pi-hole.net/guides/dns/dnscrypt-proxy/
 
-#Installing dnscrypt-proxy:
+**Installing dnscrypt-proxy:**
 ```bash
 sudo apt install dnscrypt-proxy -y
 
 #sudo systemctl enable dnscrypt-proxy
 #sudo systemctl start dnscrypt-proxy
 ```
-#Configuring dnscrypt-proxy
+**Configuring dnscrypt-proxy**
 
 **Important: edit the file shown in the guide by creating an override to survice updates and reboots:**
 Create an override (this makes /etc/systemd/system/dnscrypt-proxy.socket.d/override.conf):
 
-#Why this matters
+**Why this matters**
 
 /usr/lib/systemd/system/ (or /lib/systemd/system/) → owned by the package. Updates can replace files.
 /etc/systemd/system/ → yours. Overrides here take precedence and survive updates and reboots.
@@ -84,7 +84,6 @@ sudo systemctl edit dnscrypt-proxy.socket
 
 
 > **Note:** Clear existing `ListenStream` and `ListenDatagram` entries before adding new ones to avoid multiple socket bindings.
-``
 
 
 
