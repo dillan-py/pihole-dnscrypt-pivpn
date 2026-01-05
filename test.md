@@ -71,18 +71,23 @@ sudo apt install dnscrypt-proxy -y
 **Configuring dnscrypt-proxy**
 
 **Important: edit the file shown in the guide by creating an override to survice updates and reboots:**
-Create an override (this makes /etc/systemd/system/dnscrypt-proxy.socket.d/override.conf):
-
-**Why this matters**
-
-/usr/lib/systemd/system/ (or /lib/systemd/system/) → owned by the package. Updates can replace files.
-/etc/systemd/system/ → yours. Overrides here take precedence and survive updates and reboots.
-
+This makes /etc/systemd/system/dnscrypt-proxy.socket.d/override.conf
 ```bash
 sudo systemctl edit dnscrypt-proxy.socket
 ```
+Use port 5053 on localhost and make sure you clear any vendor defaults, this setup uses includes IPv6 to avoid dnsleaks through IPV6:
+```bash
+[Socket]
+# Clear vendor defaults before setting your own
+ListenStream=
+ListenDatagram=
 
-
+# Listen on localhost (IPv4 and IPv6) at port 5053
+ListenStream=127.0.0.1:5053
+ListenStream=[::1]:5053
+ListenDatagram=127.0.0.1:5053
+ListenDatagram=[::1]:5053
+```
 > **Note:** Clear existing `ListenStream` and `ListenDatagram` entries before adding new ones to avoid multiple socket bindings.
 
 
