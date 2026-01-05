@@ -1,18 +1,74 @@
 
-# Secure Pi Setup using Pi-Hole, Pi-VPN with DNSCrypt
+# Secure Pi Setup using Pi-hole, Pi-VPN with DNSCrypt
+
+Clients → Pi-hole → DNSCrypt → Internet
+VPN clients → PiVPN → Pi-hole → DNSCrypt → Internet
+
+Pi-hole does not replace DNSCrypt
+DNSCrypt runs locally and forwards encrypted DNS
+
+The Pi will connect to the router via ethernet in this example, however you can use wlan0 too.
 
 Setup initial configuration
 
-## Update Pi
+## Update and clean up any unused packages
 ```bash
 sudo apt update && sudo apt upgrade -y
-sudo apt autoremove && sudo apt autopurge -y    # Clean up any unused packages
+sudo apt autoremove && sudo apt autopurge -y
 ```
 
-## Install Pi-hole
+## Step 1: Set a Static IP (required)
+Pi-hole and PiVPN break without this.
+
+Before installing Pi-Hole, ensure that you have set a static ip for your Pi on your router, most routers will let you reserver an IP address if you provide a name, MAC and IP. This will prevent the Pi changing to another IP by DHCP over time.
+
+And if it lets you change the DNS, set it to the IP of the Pi, if your router doesn't allow you to do this, each device will only need to change their DNS setting to the IP of the Pi on the network
+
+Edit:
+```bash
+sudo nano /etc/dhcpcd.conf
+```
+Edit or add: (replace X with the IP of your Pi use 'ip a' to see the ip on eth0 or wlan0 whichever you use, if you use wlan0, ensure you are using that interface)
+```ini
+interface eth0
+static ip_address=192.168.0.X/24
+static routers=192.168.0.1
+static domain_name_servers=127.0.0.1
+```
+Reboot:
+```bash
+sudo reboot
+```
+Confirm:
+```bash
+ip a
+ip route
+```
+
+## Step 2: Install Pi-Hole
 ```bash
 curl -sSL https://install.pi-hole.net | bash
 ```
+
+After install:
+```bash
+pihole status
+```
+
+```bash
+curl -sSL https://install.pi-hole.net | bash
+```
+
+Important choices during install:
+
+Upstream DNS: Any (this is only temporary and will change this later to a custom DNS: #127.0.0.1#5353 as DNSCrypt will use this later)
+
+Web interface: Yes
+
+Blocklists: Default is fine
+
+
+
 
 ## Install PiVPN (WireGuard/OpenVPN)
 ```bash
