@@ -2,6 +2,7 @@
 ```mathematica
 Client → Pi‑hole (port 53) → dnscrypt‑proxy (port 5053) → encrypted DNS upstream
 ```
+```bash
 sudo curl -sSL https://install.pi-hole.net | bash
 sudo pihole setpassword
 sudo pihole enable
@@ -26,17 +27,17 @@ sudo pihole enable
   dig @127.0.0.1 -p 5053 example.com
   275  sudo journalctl -u dnscrypt-proxy.service -n 50 --no-pager
   276  dig @127.0.0.1 -p 5053 cloudflare.co
-
+```
     285  sudo pihole-FTL --config dns.upstreams
-    #check your dns upstream
-
+# check your dns upstream:
   sudo pihole -t
 
     288  dig @127.0.0.1 -p 5053 dnssec-failed.org
   289  dig dnssec-failed.org -----should not show 127.0.0.1
 
-  ###LIFE SAVER:::
-  nmcli
+#  ###LIFE SAVER:::
+ ```bash
+ nmcli
 
   nmcli device show | grep DNS
   292  nmcli -t -f NAME,DEVICE,TYPE,STATE connection show --active
@@ -63,8 +64,8 @@ dig dnssec-failed.org
   sudo systemctl status dnscrypt-proxy
   327  sudo systemctl status dnscrypt-proxy.socket
   328  sudo systemctl status dnscrypt-proxy.service
-
-  IF THE ABOVE AIN'T GREEN, i hate to say it but it aint workin..., FULL STOP.!
+```
+ ** IF THE ABOVE AIN'T GREEN, i hate to say it but it aint workin..., FULL STOP.!**
   
   
 
