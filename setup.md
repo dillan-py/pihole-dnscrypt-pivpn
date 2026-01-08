@@ -168,7 +168,7 @@ listen_addresses = []
 
 # Populate `server_names` with desired DoH/DNSCrypt upstream DNS servers listed in https://dnscrypt.info/public-servers/.
 # Example for Cloudflare malware-blocking DNS and bhrama-world DNS for redundancy
-server_names = ['cloudflare-security', 'bhrama-world']
+server_names = ['cloudflare-security', 'brahma-world']
 ipv6_servers = true        # set false if not using IPv6
 dnssec = true
 require_dnssec = true
