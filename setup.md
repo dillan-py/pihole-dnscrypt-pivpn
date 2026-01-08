@@ -186,7 +186,7 @@ Run the following commands to restart dnscrypt-proxy and FTLDNS:
 ```bash
 sudo systemctl restart dnscrypt-proxy.socket
 sudo systemctl restart pihole-FTL
-sudo pihole restartdns #if it fails use 'reloaddns'
+sudo pihole restartdns #if it fails use 'sudo pihole reloaddns'
 ```
 
 #Reviewing Service Status
@@ -219,6 +219,8 @@ PIHOLE_DNS_2=::1#5053
 Restart:
 ```bash
 pihole restartdns
+#if above fails:
+#sudo pihole reloaddns
 ```
 Verify on a client by setting the DNS manually to the Pi-hole IP address (Windows):
 ```bash
